@@ -11,4 +11,4 @@
 * 在WinDbg PreView调试模式下,会出现 Unknown Exception C0000096!
 * Cr0 写入,GDTR 写入,之类的特权指令引起的未知异常
 * 不在调试模式下,则一切正常.
-* DebugView 打印时常随机引发宕机
+* DebugView 打印时,常随机引发宕机,原因:IRQL级别
