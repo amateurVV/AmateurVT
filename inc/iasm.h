@@ -17,16 +17,14 @@ __int16 _readGS();
 __int16 _readTR();
 __int16 _readLDTR();
 
-__int64 _StartVM(int);
+__int64 CallBackStartVM(void* func, int cpunr);
 __int64 _HostEntry();
 
-__int64 _cpuid(PGUESTREG GuestRegs);
-__int64 _readmsr(PGUESTREG GuestRegs);
-__int64 _writemsr(PGUESTREG GuestRegs);
-
-__int64 _rdtsc(PGUESTREG GuestRegs);
-__int64 _rdtscp(PGUESTREG GuestRegs);
-__int64 asm_xsetbv(PGUESTREG GuestRegs);
+__int64 vmx_cpuid(PGUESTREG GuestRegs);
+__int64 vmx_rdmsr(PGUESTREG GuestRegs);
+__int64 vmx_wrmsr(PGUESTREG GuestRegs);
+__int64 vmx_rdtsc(PGUESTREG GuestRegs);
+__int64 vmx_rdtscp(PGUESTREG GuestRegs);
 
 void _invd();
 void _cli();

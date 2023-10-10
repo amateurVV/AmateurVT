@@ -261,7 +261,7 @@ enum VMCS_Fields {
 
 	/*32-Bit Read-Only Data Fields*/
 	VM_INSTRUCTION_ERROR = 0x4400,													//32-Bit Read-Only Data Fields
-	EXIT_REASON = 0x4402,															//32-Bit Read-Only Data Fields
+	VM_EXIT_REASON = 0x4402,														//32-Bit Read-Only Data Fields
 	VM_EXIT_INTERRUPTION_INFORMATION = 0x4404,										//32-Bit Read-Only Data Fields
 	VM_EXIT_INTERRUPTION_ERROR_CODE = 0x4406,										//32-Bit Read-Only Data Fields
 	IDT_VECTORING_INFORMATION_FIELD = 0x4408,										//32-Bit Read-Only Data Fields
@@ -272,7 +272,7 @@ enum VMCS_Fields {
 	GUEST_PHYSICAL_ADDRESS_FULL = 0x2400,											//64-Bit Read-Only Data Fields
 	GUEST_PHYSICAL_ADDRESS_HIGH = 0x2401,											//64-Bit Read-Only Data Fields
 	/*Natural-Width Read-Only Data Fields*/
-	EXIT_QUALIFICATION = 0x6400,													//Natural-Width Read-Only Data Fields
+	VM_EXIT_QUALIFICATION = 0x6400,													//Natural-Width Read-Only Data Fields
 	IO_RCX = 0x6402,																//Natural-Width Read-Only Data Fields
 	IO_RSI = 0x6404,																//Natural-Width Read-Only Data Fields
 	IO_RDI = 0x6406,																//Natural-Width Read-Only Data Fields

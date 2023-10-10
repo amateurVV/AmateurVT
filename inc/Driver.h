@@ -21,31 +21,30 @@ typedef struct {
 	ULONG64 MsrData;
 }MSRSTORE;
 
+typedef struct _SMEMORY{
+	PVOID vir;
+	PVOID phy;
+}SMEMORY,*PSMEMORY;
+
 typedef struct _VM {
-	PVOID pOnVa;
-	PVOID pCsVa;
-	PVOID pStack;
+	SMEMORY VmxON;
+	SMEMORY VmxCS;
+	SMEMORY MsrBitMap;
+	PVOID VmxStack;
 
-	PHYSICAL_ADDRESS pOnPa;
-	PHYSICAL_ADDRESS pCsPa;
-
-	PVOID pMsrMapVa;
-	PVOID pMsrMap_R_L;
-	PVOID pMsrMap_R_H;
-	PVOID pMsrMap_W_L;
-	PVOID pMsrMap_W_H;
-	MSRSTORE* pMsrMemVa;
-
-	PHYSICAL_ADDRESS pMsrMemPa;
-	PHYSICAL_ADDRESS pMsrMapPa;
 	ULONG ExecptBitMap;
 
 	ULONG64 SaveMsrLstar;
 	ULONG64 EntryLoadMsrCount;
-}VM;
+}VM,*PVM;
+
+typedef struct _VT {
+	PVM vm;
+}VT,*PVT;
 
 #pragma pack()
 
-VM* psVM;
+PVT vt;
+
 
 

@@ -53,11 +53,9 @@ ReturnErrorCode MACRO
 	jz err2
 	xor eax,eax
 	ret
-
 err1:
 	mov eax,1
-	ret
-	
+	ret	
 err2:
 	mov eax,2
 	ret
@@ -160,7 +158,7 @@ _readLDTR PROC
 _readLDTR ENDP
 
 
-_cpuid proc
+vmx_cpuid proc
 	push r8
     mov r8,rcx
 	mov rax,[r8+GUEST_RAX]
@@ -172,9 +170,9 @@ _cpuid proc
     mov [r8+GUEST_RBX],rbx
 	pop r8
     ret
-_cpuid endp
+vmx_cpuid endp
 
-_readmsr proc
+vmx_rdmsr proc
 	push r8
 	mov r8,rcx
 	mov rcx,[r8+GUEST_RCX]
@@ -183,9 +181,9 @@ _readmsr proc
 	mov [r8+GUEST_RAX],rax
 	pop r8
     ret
-_readmsr endp
+vmx_rdmsr endp
 
-_writemsr proc
+vmx_wrmsr proc
 	push r8
 	mov r8,rcx
 	mov rax,[r8+GUEST_RAX]
@@ -194,9 +192,9 @@ _writemsr proc
     wrmsr
 	pop r8
     ret
-_writemsr endp
+vmx_wrmsr endp
 
-_rdtsc proc
+vmx_rdtsc proc
 	push r8
 	mov r8,rcx	
 	rdtsc
@@ -204,9 +202,9 @@ _rdtsc proc
 	mov [r8+GUEST_RDX],rdx
 	pop r8
 	ret
-_rdtsc endp
+vmx_rdtsc endp
 
-_rdtscp PROC
+vmx_rdtscp PROC
 	push r8	
 	mov r8,rcx
 	rdtscp
@@ -215,18 +213,8 @@ _rdtscp PROC
 	mov [r8+GUEST_RDX],rdx
 	pop r8
 	ret
-_rdtscp ENDP
+vmx_rdtscp ENDP
 
-asm_xsetbv proc
-	push r8
-	mov r8,rcx	
-	mov rax,[r8+GUEST_RAX]
-	mov rcx,[r8+GUEST_RCX]
-	mov rdx,[r8+GUEST_RDX]
-	xsetbv
-	pop r8
-	ret
-asm_xsetbv endp
 
 _invd proc
 	invd
@@ -243,21 +231,23 @@ _sti proc
 	ret
 _sti endp
 
-_StartVM proc
+CallBackStartVM proc
 	pushfq
 	pushaq	
 	
 	sub rsp,20h
+	mov rax,rcx
+	mov rcx,rdx
 	mov r8,rsp					;GuestRsp	
 	mov rdx,offset returnAddr	;GuestRip	
-	call StartVM
+	call rax
 
 returnAddr:	
 	add rsp,20h
 	popaq
 	popfq
 	ret
-_StartVM endp
+CallBackStartVM endp
 
 
 _HostEntry PROC	
@@ -267,25 +257,25 @@ _HostEntry PROC
 	pushaq	
 	mov rcx,rsp	;GuestRegs		
 
-	;sub rsp,70h				
-    ;movups xmmword ptr [rsp +  8h], xmm0
-    ;movups xmmword ptr [rsp + 18h], xmm1
-    ;movups xmmword ptr [rsp + 28h], xmm2
-    ;movups xmmword ptr [rsp + 38h], xmm3
-    ;movups xmmword ptr [rsp + 48h], xmm4
-    ;movups xmmword ptr [rsp + 58h], xmm5
+	sub rsp,70h				
+    movups xmmword ptr [rsp +  8h], xmm0
+    movups xmmword ptr [rsp + 18h], xmm1
+    movups xmmword ptr [rsp + 28h], xmm2
+    movups xmmword ptr [rsp + 38h], xmm3
+    movups xmmword ptr [rsp + 48h], xmm4
+    movups xmmword ptr [rsp + 58h], xmm5
 
 	sub rsp,20h
 	call HostEntry
 	add rsp,20h
 
-	;movups xmm0, xmmword ptr [rsp +  8h]
-    ;movups xmm1, xmmword ptr [rsp + 18h]
-    ;movups xmm2, xmmword ptr [rsp + 28h]
-    ;movups xmm3, xmmword ptr [rsp + 38h]
-    ;movups xmm4, xmmword ptr [rsp + 48h]
-    ;movups xmm5, xmmword ptr [rsp + 58h]
-    ;add rsp, 70h
+	movups xmm0, xmmword ptr [rsp +  8h]
+    movups xmm1, xmmword ptr [rsp + 18h]
+    movups xmm2, xmmword ptr [rsp + 28h]
+    movups xmm3, xmmword ptr [rsp + 38h]
+    movups xmm4, xmmword ptr [rsp + 48h]
+    movups xmm5, xmmword ptr [rsp + 58h]
+    add rsp, 70h
 		
 	cmp rax,ExitVMX
 	jz leave_vmx

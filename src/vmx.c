@@ -20,11 +20,10 @@ ULONG64 FixCr0()
 {
 	IA32_CR0 uCr0 = { 0 };
 	uCr0.value.QuadPart = __readcr0();
-
 	uCr0.value.QuadPart |= __readmsr(MSR_IA32_VMX_CR0_FIXED0);
 	uCr0.value.QuadPart &= __readmsr(MSR_IA32_VMX_CR0_FIXED1);
-
 	__writecr0(uCr0.value.QuadPart);
+
 	return TRUE;
 }
 
@@ -32,13 +31,11 @@ ULONG64 FixCr4()
 {
 	IA32_CR4 uCr4 = { 0 };
 	uCr4.value.QuadPart = __readcr4();
-
 	uCr4.value.QuadPart |= __readmsr(MSR_IA32_VMX_CR4_FIXED0);
 	uCr4.value.QuadPart &= __readmsr(MSR_IA32_VMX_CR4_FIXED1);
-	uCr4.Bits.VMXE = 1;
-
 	__writecr4(uCr4.value.QuadPart);
-	return TRUE;
+
+	return uCr4.Bits.VMXE;
 }
 
 ULONG64 CheckVMX()
@@ -252,14 +249,14 @@ ULONG64 SetVmxExtend(UCHAR CpuIndex)
 {
 	ULONG64 ret = 0;
 
-	psVM[CpuIndex].ExecptBitMap = 0;
-	ret += vmx_write(EXCEPTION_BITMAP, psVM[CpuIndex].ExecptBitMap);
+	vt->vm[CpuIndex].ExecptBitMap = 0;
+	ret += vmx_write(EXCEPTION_BITMAP, vt->vm[CpuIndex].ExecptBitMap);
 
 	ret += vmx_write(VMCS_LINK_POINTER_FULL, ~0Ull);
 	ret += vmx_write(VIRTUAL_PROCESSOR_IDENTIFIER, CpuIndex);
 
-	ret += vmx_write(VM_ENTRY_MSR_LOAD_ADDRESS_FULL, psVM[CpuIndex].pMsrMemPa.QuadPart);
-	ret += vmx_write(ADDRESS_OF_MSR_BITMAPS_FULL, psVM[CpuIndex].pMsrMapPa.QuadPart);
+	
+	ret += vmx_write(ADDRESS_OF_MSR_BITMAPS_FULL, (UINT64)vt->vm[CpuIndex].MsrBitMap.phy);
 
 	return ret;
 }
@@ -341,9 +338,9 @@ ULONG64 SetGuestState(ULONG64 GuestRip, ULONG64 GuestRsp)
 
 ULONG64 InitVmxON(UCHAR CpuIndex, ULONG RevisonId)
 {
-	*((PULONG)psVM[CpuIndex].pOnVa) = RevisonId;
+	*((PULONG)vt->vm[CpuIndex].VmxON.vir) = RevisonId;
 
-	ULONG64 ret = vmx_on(&psVM[CpuIndex].pOnPa.QuadPart);
+	ULONG64 ret = vmx_on(&vt->vm[CpuIndex].VmxON.phy);
 	if (ret)
 	{
 		KdPrint(("vmx_on 失败！\n"));
@@ -355,11 +352,11 @@ ULONG64 InitVmxON(UCHAR CpuIndex, ULONG RevisonId)
 
 ULONG64 InitVmxCS(UCHAR CpuIndex, ULONG RevisonId)
 {
-	*((PULONG)psVM[CpuIndex].pCsVa) = RevisonId;
+	*((PULONG)vt->vm[CpuIndex].VmxCS.vir) = RevisonId;
 
-	if (vmx_clear(&psVM[CpuIndex].pCsPa.QuadPart))
+	if (vmx_clear(&vt->vm[CpuIndex].VmxCS.phy))
 		return FALSE;
-	if (vmx_ptrld(&psVM[CpuIndex].pCsPa.QuadPart))
+	if (vmx_ptrld(&vt->vm[CpuIndex].VmxCS.phy))
 		return FALSE;
 
 	return TRUE;
@@ -407,7 +404,7 @@ ULONG64 StartVM(UCHAR CpuIndex, ULONG64 GuestRip, ULONG64 GuestRsp)
 		return FALSE;
 	}
 	ULONG64 HostRip = (ULONG64)_HostEntry;
-	ULONG64 HostRsp = (ULONG64)psVM[CpuIndex].pStack + STACK_SIZE;
+	ULONG64 HostRsp = (ULONG64)vt->vm[CpuIndex].VmxStack + STACK_SIZE;
 	if (!SetVMXCS(CpuIndex, GuestRip, GuestRsp, HostRip, HostRsp, VmxBasic.Bits.VmxControls)) {
 		KdPrint(("Set VMX CS fail...\n"));
 		DbgBreakPoint();
@@ -421,20 +418,22 @@ ULONG64 StartVM(UCHAR CpuIndex, ULONG64 GuestRip, ULONG64 GuestRsp)
 	return FALSE;
 }
 
-ULONG64 HostEntry(PGUESTREG pGuestRegs)
+ULONG64 HostEntry(PGUESTREG GuestRegs)
 {
-	vmx_read(VIRTUAL_PROCESSOR_IDENTIFIER, &pGuestRegs->CpuIndex);
-	vmx_read(EXIT_REASON, &pGuestRegs->ExitReason);
+	vmx_read(VIRTUAL_PROCESSOR_IDENTIFIER, &GuestRegs->CpuIndex);
+	vmx_read(VM_EXIT_REASON, &GuestRegs->ExitReason);
 
-	vmx_read(GUEST_RIP, &pGuestRegs->GuestRip);
-	vmx_read(GUEST_RSP, &pGuestRegs->GuestRsp);
-	vmx_read(GUEST_RFLAGS, &pGuestRegs->GuestFlag);
-	vmx_read(VM_EXIT_INSTRUCTION_LENGTH, &pGuestRegs->InstrLen);
+	vmx_read(GUEST_RIP, &GuestRegs->GuestRip);
+	vmx_read(GUEST_RSP, &GuestRegs->GuestRsp);
+	vmx_read(GUEST_RFLAGS, &GuestRegs->GuestFlag);
+	vmx_read(VM_EXIT_INSTRUCTION_LENGTH, &GuestRegs->InstrLen);
 
 	/*此处可升级成get pcr struct,需要修改 _HostEntry 的汇编代码和 PGUESTREG 的结构
 	判断是哪种系统的 pcr 从而采用不同结构的 pcr*/
-	pGuestRegs->EProcess = PsGetCurrentProcess();
-	pGuestRegs->EThread = PsGetCurrentThread();
+	GuestRegs->EProcess = PsGetCurrentProcess();
+	GuestRegs->EThread = PsGetCurrentThread();
 
-	return DispatchHandler(pGuestRegs);
+	EXIT_REASON_FIELDS* Exit = (EXIT_REASON_FIELDS*)&GuestRegs->ExitReason;
+
+	return HandlerExit[Exit->Bits.Basic](GuestRegs);
 }
