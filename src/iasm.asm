@@ -24,6 +24,7 @@ push r8
 push rdi
 push rsi
 push rbp
+sub rsp,8
 push rbx
 push rdx
 push rcx
@@ -35,6 +36,7 @@ pop rax
 pop rcx
 pop rdx
 pop rbx
+add rsp,8
 pop rbp
 pop rsi
 pop rdi
@@ -258,23 +260,23 @@ _HostEntry PROC
 	mov rcx,rsp	;GuestRegs		
 
 	sub rsp,70h				
-    movups xmmword ptr [rsp +  8h], xmm0
-    movups xmmword ptr [rsp + 18h], xmm1
-    movups xmmword ptr [rsp + 28h], xmm2
-    movups xmmword ptr [rsp + 38h], xmm3
-    movups xmmword ptr [rsp + 48h], xmm4
-    movups xmmword ptr [rsp + 58h], xmm5
+    movups xmmword ptr [rsp + 00h], xmm0
+    movups xmmword ptr [rsp + 10h], xmm1
+    movups xmmword ptr [rsp + 20h], xmm2
+    movups xmmword ptr [rsp + 30h], xmm3
+    movups xmmword ptr [rsp + 40h], xmm4
+    movups xmmword ptr [rsp + 50h], xmm5
 
 	sub rsp,20h
 	call HostEntry
 	add rsp,20h
 
-	movups xmm0, xmmword ptr [rsp +  8h]
-    movups xmm1, xmmword ptr [rsp + 18h]
-    movups xmm2, xmmword ptr [rsp + 28h]
-    movups xmm3, xmmword ptr [rsp + 38h]
-    movups xmm4, xmmword ptr [rsp + 48h]
-    movups xmm5, xmmword ptr [rsp + 58h]
+	movups xmm0, xmmword ptr [rsp + 00h]
+    movups xmm1, xmmword ptr [rsp + 10h]
+    movups xmm2, xmmword ptr [rsp + 20h]
+    movups xmm3, xmmword ptr [rsp + 30h]
+    movups xmm4, xmmword ptr [rsp + 40h]
+    movups xmm5, xmmword ptr [rsp + 50h]
     add rsp, 70h
 		
 	cmp rax,ExitVMX

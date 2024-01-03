@@ -13,6 +13,7 @@ typedef struct _GUESTREG {
 	ULONG64 rcx;
 	ULONG64 rdx;
 	ULONG64 rbx;
+	ULONG64 rsp;//不应该使用，占位用的
 	ULONG64 rbp;
 	ULONG64 rsi;
 	ULONG64 rdi;

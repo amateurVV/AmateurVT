@@ -84,38 +84,28 @@ ULONG64 HandlerWRMSR(PGUESTREG GuestRegs)
 
 ULONG64 HandlerCRX(PGUESTREG GuestRegs)
 {
-	EXIT_QUA_CR_ACCESS Exit = { 0 };
-	vmx_read(VM_EXIT_QUALIFICATION, &Exit.value);
+	enum ACCESSTYPE
+	{
+		MOV_TO_CR,
+		MOV_FROM_CR,
+		CLTS,
+		LMSW
+	};
 
-	switch (Exit.Bits.RegNum)
-	{
-	case 0:
-	{
-		if (Exit.Bits.AccessType)
-			vmx_read(GUEST_CR0, ((PULONG64)GuestRegs + Exit.Bits.MovToCr));
-		else
-			vmx_write(GUEST_CR0, *((PULONG64)GuestRegs + Exit.Bits.MovToCr));
-		break;
-	}
-	case 3:
-	{
-		if (Exit.Bits.AccessType)
-			vmx_read(GUEST_CR3, ((PULONG64)GuestRegs + Exit.Bits.MovToCr));
-		else
-			vmx_write(GUEST_CR3, *((PULONG64)GuestRegs + Exit.Bits.MovToCr));
-		break;
-	}
-	case 4:
-	{
-		if (Exit.Bits.AccessType)
-			vmx_read(GUEST_CR4, ((PULONG64)GuestRegs + Exit.Bits.MovToCr));
-		else
-			vmx_write(GUEST_CR4, *((PULONG64)GuestRegs + Exit.Bits.MovToCr));
-		break;
-	}
-	default:
-		break;
-	}
+	long CR[] = { GUEST_CR0, 1, 2, GUEST_CR3, GUEST_CR4 };
+
+	EXIT_QUALIFICATION_CR_ACCESS Exit = { 0 };
+	vmx_read(VM_EXIT_QUALIFICATION, &Exit.value);	
+
+	if (Exit.Bits.AccessType == MOV_TO_CR)
+		vmx_write(CR[Exit.Bits.NumCR], *((ULONG64*)GuestRegs + Exit.Bits.NumReg));
+	else if (Exit.Bits.AccessType == MOV_FROM_CR)
+		vmx_read(CR[Exit.Bits.NumCR], ((ULONG64*)GuestRegs + Exit.Bits.NumReg));
+	else if (Exit.Bits.AccessType == CLTS)
+		KdPrint(("HandlerCRX CLTS"));
+	else if (Exit.Bits.AccessType == LMSW)
+		KdPrint(("HandlerCRX LMSW"));
+
 	GuestRegs->GuestRip += GuestRegs->InstrLen;
 	vmx_write(GUEST_RIP, GuestRegs->GuestRip);
 	return TRUE;
@@ -143,19 +133,22 @@ ULONG64 HandlerRDTSCP(PGUESTREG GuestRegs)
 	return TRUE;
 }
 
-ULONG64 ExitNotHandler(PGUESTREG GuestRegs)
+ULONG64 ExitNoHandler(PGUESTREG GuestRegs)
 {
 	DbgBreakPoint();
+	
 	return TRUE;
 }
 
-void InitHandlerVmExit()
+ULONG64 InitHandlerVmExit()
 {
 	HandlerExit = ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(PVOID) * EXIT_MAX, 'Exit');
+	if (!HandlerExit)
+		return FALSE;
 
 	for (size_t i = 0; i < EXIT_MAX; i++)
 	{
-		HandlerExit[i] = ExitNotHandler;//暂时先将所有处理函数设置成不处理
+		HandlerExit[i] = ExitNoHandler;//暂时先将所有处理函数设置成不处理
 	}
 	HandlerExit[EXIT_REASON_CPUID] = HandlerCPUID;
 
@@ -173,5 +166,7 @@ void InitHandlerVmExit()
 	HandlerExit[EXIT_REASON_VMXOFF] = HandlerVMOFF;
 
 	HandlerExit[EXIT_REASON_MTF_TRAP_FLAG] = HandlerMTF;
+
+	return TRUE;
 
 }

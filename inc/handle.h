@@ -49,21 +49,21 @@ typedef union _EXIT_QUA_TASK_SWITCHES
 } EXIT_QUA_TASK_SWITCHES, *PEXIT_QUA_TASK_SWITCHES;
 
 /*Exit Qualification for Control-Register Accesses*/
-typedef union _EXIT_QUA_CR_ACCESS
+typedef union _EXIT_QUALIFICATION_CR_ACCESS
 {
 	struct
 	{
-		ULONG64 RegNum : 4;		 // bit-0:3	控制寄存器的编号（CLTS 和 LMSW 为 0）
-		ULONG64 AccessType : 2;	 // bit-4:5	//0 = MOV to CR;	//1 = MOV from CR;	//2 = CLTS;3 = LMSW
-		ULONG64 LMSW : 1;		 // bit-6		//0 = register;	//1 = memory
-		ULONG64 UnDefine1 : 1;	 // bit-7
-		ULONG64 MovToCr : 4;	 // bit-8:11	[0-15] = RegNum
-		ULONG64 UnDefine2 : 4;	 // bit-12:15
-		ULONG64 SourceData : 16; // bit-16:31	//For LMSW, the LMSW source data	//For CLTSand MOV CR, cleared to 0
-		ULONG64 UnDefine3 : 32;	 // bit-32:63
+		unsigned long long NumCR : 4;       // bit-0:3	    控制寄存器的编号（CLTS 和 LMSW 为 0）
+		unsigned long long AccessType : 2;  // bit-4:5	    0 = MOV to CR;	1 = MOV from CR;	2 = CLTS;3 = LMSW
+		unsigned long long LMSW : 1;        // bit-6	    0 = register;	1 = memory
+		unsigned long long : 1;             // bit-7
+		unsigned long long NumReg : 4;      // bit-8:11	    NumReg 0-F,rax-r15
+		unsigned long long : 4;             // bit-12:15
+		unsigned long long SourceData : 16; // bit-16:31	LMSW, the LMSW source data (CLTSand MOV CR, cleared to 0)
+		unsigned long long : 32;            // bit-32:63
 	} Bits;
-	ULONG64 value;
-} EXIT_QUA_CR_ACCESS, *PEXIT_QUA_CR_ACCESS;
+	unsigned long long value;
+} EXIT_QUALIFICATION_CR_ACCESS, * PEXIT_QUALIFICATION_CR_ACCESS;
 
 /*Exit Qualification for APIC-Access VM Exits from Linear Accesses and Guest-Physical Accesses*/
 typedef union _EXIT_QUA_ADDR_ACCESS
@@ -220,4 +220,4 @@ enum vm_exit_reason
 
 
 ULONG64 (**HandlerExit)(PGUESTREG);
-void InitHandlerVmExit();
+ULONG64 InitHandlerVmExit();
