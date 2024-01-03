@@ -79,17 +79,19 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObject, PUNICODE_STRING RegisterPath)
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	/*申请VM所有核的内存*/
 	vt = ExAllocatePool2(POOL_FLAG_NON_PAGED_EXECUTE, sizeof(VT), 'PVT');
+	if (!vt)
+		return STATUS_UNSUCCESSFUL;
+
+	/*申请VM所有核的内存*/
 	vt->vm = ExAllocatePool2(POOL_FLAG_NON_PAGED_EXECUTE, sizeof(VM) * KeNumberProcessors, 'PVM');
 	if (!vt->vm)
-	{
-		KdPrint(("Error:ExAllocatePool2\n"));
 		return STATUS_UNSUCCESSFUL;
-	}
 
 	//初始化VMEXIT处理函数
-	InitHandlerVmExit();
+	if (!InitHandlerVmExit())
+		return STATUS_UNSUCCESSFUL;
+
 	//发送IPI,启动VT
 	if (!KeIpiGenericCall(KipiSetupVT, 0))
 	{

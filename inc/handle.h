@@ -220,4 +220,4 @@ enum vm_exit_reason
 
 
 ULONG64 (**HandlerExit)(PGUESTREG);
-void InitHandlerVmExit();
+ULONG64 InitHandlerVmExit();

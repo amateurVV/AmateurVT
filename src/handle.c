@@ -149,9 +149,11 @@ ULONG64 ExitNotHandler(PGUESTREG GuestRegs)
 	return TRUE;
 }
 
-void InitHandlerVmExit()
+ULONG64 InitHandlerVmExit()
 {
 	HandlerExit = ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(PVOID) * EXIT_MAX, 'Exit');
+	if (!HandlerExit)
+		return FALSE;
 
 	for (size_t i = 0; i < EXIT_MAX; i++)
 	{
@@ -173,5 +175,7 @@ void InitHandlerVmExit()
 	HandlerExit[EXIT_REASON_VMXOFF] = HandlerVMOFF;
 
 	HandlerExit[EXIT_REASON_MTF_TRAP_FLAG] = HandlerMTF;
+
+	return TRUE;
 
 }
